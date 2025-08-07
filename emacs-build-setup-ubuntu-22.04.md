@@ -24,7 +24,7 @@ sudo apt install -y build-essential autoconf libgtk-3-dev libgnutls28-dev \
 wget https://ftp.gnu.org/gnu/emacs/emacs-30.1.tar.gz
 tar xzf emacs-30.1.tar.gz
 cd emacs-30.1
-./configure --with-native-compilation --with-json --with-tree-sitter
+./configure --with-native-compilation --with-tree-sitter
 make -j$(nproc)
 sudo make install
 ```
@@ -170,12 +170,21 @@ Set up the build environment:
 export CC=/usr/bin/gcc-12
 export CXX=/usr/bin/g++-12
 
-# Configure with recommended options
+# Configure with recommended options (Wayland users)
 ./configure \
   --with-native-compilation \
-  --with-json \
   --with-tree-sitter \
   --with-pgtk \
+  --with-rsvg \
+  --with-gnutls \
+  --with-mailutils \
+  --with-sqlite3 \
+  --with-webp
+
+# Configure for X11 users (DO NOT use --with-pgtk)
+./configure \
+  --with-native-compilation \
+  --with-tree-sitter \
   --with-rsvg \
   --with-gnutls \
   --with-mailutils \
@@ -186,14 +195,27 @@ export CXX=/usr/bin/g++-12
 #### Configuration Options Explained
 
 - `--with-native-compilation`: Enables native compilation for better performance
-- `--with-json`: Adds JSON parsing support (enhanced in Emacs 30.1)
 - `--with-tree-sitter`: Enables tree-sitter for better syntax highlighting
-- `--with-pgtk`: Pure GTK support (better Wayland compatibility)
+- `--with-pgtk`: Pure GTK support (**Wayland only** - causes crashes on X11)
 - `--with-rsvg`: SVG image support
 - `--with-gnutls`: TLS/SSL support
 - `--with-mailutils`: Email handling support
 - `--with-sqlite3`: SQLite database support (new in Emacs 30.1)
 - `--with-webp`: WebP image format support
+
+**Important**: JSON support is now built-in to Emacs 30.1 and no longer requires `--with-json`
+
+#### Display Server Compatibility
+
+**⚠️ Critical Warning**: The `--with-pgtk` flag will cause Emacs to crash on X11 systems. Only use this flag if you're running Wayland.
+
+To check your display server:
+```bash
+echo $XDG_SESSION_TYPE
+```
+
+- If output is `wayland`: Use the configuration with `--with-pgtk`
+- If output is `x11`: Use the configuration without `--with-pgtk`
 
 #### Minimal Configuration
 
@@ -220,6 +242,28 @@ make -j$(nproc)
 ```
 
 **Note**: Compilation with native compilation enabled may take 10-30 minutes depending on your system. Emacs 30.1 includes improved native compilation performance.
+
+#### Cleaning Up for Reconfiguration
+
+If you need to rebuild with different configuration options:
+
+```bash
+# Clean previous build artifacts
+make clean
+
+# For a more thorough cleanup (removes all generated files)
+make distclean
+
+# Then reconfigure and rebuild
+./configure [your-new-options]
+make -j$(nproc)
+```
+
+**When to clean:**
+- Changing major configuration options (like adding/removing `--with-pgtk`)
+- Switching between display server targets (X11 ↔ Wayland)
+- After updating dependencies
+- If you encounter strange build errors
 
 ### Step 6: Test the Build
 
@@ -410,12 +454,13 @@ This guide is specifically for:
 ## What's New in Emacs 30.1
 
 Emacs 30.1 includes several notable improvements:
-- Enhanced native JSON support without external libjansson dependency
-- Improved Android port with touch-screen support
-- New tree-sitter-based major modes (elixir-ts-mode, heex-ts-mode, html-ts-mode, lua-ts-mode, php-ts-mode)
-- Better native compilation performance
-- SQLite database support
-- Security fixes for CVE-2025-1244 and CVE-2024-53920
+- **Native JSON support**: Built-in JSON parsing without external libjansson dependency (no `--with-json` needed)
+- **Improved Android port**: Enhanced touch-screen support and mobile compatibility
+- **New tree-sitter modes**: elixir-ts-mode, heex-ts-mode, html-ts-mode, lua-ts-mode, php-ts-mode
+- **Better native compilation**: Improved performance and compilation speed
+- **SQLite database support**: Built-in database functionality via `--with-sqlite3`
+- **Security fixes**: Addresses CVE-2025-1244 and CVE-2024-53920
+- **Display server improvements**: Better Wayland support via `--with-pgtk` (but incompatible with X11)
 
 ## Additional Resources
 
